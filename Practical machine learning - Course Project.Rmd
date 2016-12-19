@@ -1,0 +1,178 @@
+---
+title: "Practical Machine Learning - Course project"
+author: "Sergej Horvat"
+date: "18. prosinca 2016."
+output: html_document
+---
+
+## 
+
+### Background
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+
+### Data
+The training data for this project are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment. 
+
+
+### What you should submit
+
+The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. You may use any of the other variables to predict with. 
+* You should create a report describing how you built your model,
+* how you used cross validation, 
+* what you think the expected out of sample error is, 
+* and why you made the choices you did. 
+* You will also use your prediction model to predict 20 different test cases.
+
+#### Peer Review Portion
+Your submission for the Peer Review portion should consist of a link to a Github repo with your R markdown and compiled HTML file describing your analysis. Please constrain the text of the writeup to < 2000 words and the number of figures to be less than 5. It will make it easier for the graders if you submit a repo with a gh-pages branch so the HTML page can be viewed online (and you always want to make it easy on graders :-).
+
+
+#### Course Project Prediction Quiz Portion
+Apply your machine learning algorithm to the 20 test cases available in the test data above and submit your predictions in appropriate format to the Course Project Prediction Quiz for automated grading. 
+
+
+### Reproducibility
+Due to security concerns with the exchange of R code, your code will not be run during the evaluation by your classmates. Please be sure that if they download the repo, they will be able to view the compiled HTML version of your analysis. 
+
+```{r}
+# Load trining and test data
+pml.train <- read.csv("D://+Coursera//+Data Science//+Practical Machine Learning//Week 4//pml-training.csv")
+
+pml.test <- read.csv("D://+Coursera//+Data Science//+Practical Machine Learning//Week 4//pml-testing.csv")
+
+# Lets see some data
+str(pml.train)
+```
+
+
+### Random forest model with all raw data from all sensors
+```{r}
+## RANDOM FOREST MODELS
+
+library(randomForest)
+set.seed(1)
+pml.train.rf <- randomForest(classe ~ 
+                        roll_belt+pitch_belt+yaw_belt+total_accel_belt+
+                        gyros_belt_x+gyros_belt_y+gyros_belt_z+
+                        accel_belt_x+accel_belt_y+accel_belt_z+
+                        magnet_belt_x+magnet_belt_y+magnet_belt_z+
+                        roll_arm+pitch_arm+yaw_arm+
+                        gyros_arm_x+gyros_arm_y+gyros_arm_z+
+                        accel_arm_x+accel_arm_y+accel_arm_z+
+                        magnet_arm_x+magnet_arm_y+magnet_arm_z+
+                        roll_dumbbell+pitch_dumbbell+yaw_dumbbell+total_accel_dumbbell+
+                        gyros_dumbbell_x+gyros_dumbbell_y+gyros_dumbbell_z+
+                        accel_dumbbell_x+accel_dumbbell_y+accel_dumbbell_z+
+                        magnet_dumbbell_x+magnet_dumbbell_y+magnet_dumbbell_z+
+                        roll_forearm+pitch_forearm+yaw_forearm+total_accel_forearm+
+                        gyros_forearm_x+gyros_forearm_y+gyros_forearm_z+
+                        accel_forearm_x+accel_forearm_y+accel_forearm_z+
+                        magnet_forearm_x+magnet_forearm_y+magnet_forearm_z,
+                        data=pml.train, 
+                        method="rf",
+                        importance=TRUE,
+                        na.action = na.omit)
+
+# Print the training model data
+print(pml.train.rf)
+plot(pml.train.rf)
+
+# Print variable importance
+round(importance(pml.train.rf),2)
+
+# Predict from RANDOM FOREST MODEL
+pml.test.predict <- predict(pml.train.rf,pml.test)
+print(pml.test.predict)
+```
+With approach to use all data that has values results in accurate model OOB error only 0.28% (test data quiz 20/20). but is this proper model with that many predictors? This leads to large amount of sensors and data to be processed. 
+Could we build a model  that needs less number of predictors to get god accuracy. So less sensors and data to process is needed.
+
+
+### Test with less predictors chosen from importance
+```{r}
+#Build new random forest model
+pml.train.rf2 <- randomForest(classe ~ 
+                                      roll_belt+
+                                      pitch_belt+
+                                      yaw_belt+
+                                      total_accel_belt+
+                                      gyros_belt_x+
+                                      gyros_belt_y+
+                                      gyros_belt_z+
+                                      accel_belt_x+
+                                      accel_belt_y+
+                                      accel_belt_z+
+                                      magnet_belt_x+
+                                      magnet_belt_y+
+                                      magnet_belt_z+
+                                      roll_arm+
+                                      pitch_arm+
+                                      yaw_arm,
+                                      data=pml.train, 
+                                      method="rf",
+                                      importance=TRUE,
+                                      na.action = na.omit)
+
+# Print the training model data
+print(pml.train.rf2)
+plot(pml.train.rf2)
+pml.test.predict2 <- predict(pml.train.rf2,pml.test)
+pml.test.predict
+pml.test.predict2
+
+# Are result the same as first model?
+pml.test.predict2 == pml.test.predict
+
+
+```
+Again we gor the same results as above with less variables chosen by random forest "importance" function and took top 16. OOB estimate of  error rate got higher to 3.29% versus 0.29% from first run.
+We get 20/20 in test.
+
+Ok, lets try even less predictors , only with the belt data, meaning one sensor only!
+```{r}
+#Build new random forest model
+pml.train.rf3 <- randomForest(classe ~ 
+                                      roll_belt+
+                                      pitch_belt+
+                                      yaw_belt+
+                                      total_accel_belt+
+                                      gyros_belt_x+
+                                      gyros_belt_y+
+                                      gyros_belt_z+
+                                      accel_belt_x+
+                                      accel_belt_y+
+                                      accel_belt_z+
+                                      magnet_belt_x+
+                                      magnet_belt_y+
+                                      magnet_belt_z,
+                                      data=pml.train, 
+                                      method="rf",
+                                      importance=TRUE,
+                                      na.action = na.omit)
+
+# Print the training model data
+print(pml.train.rf3)
+plot(pml.train.rf3)
+pml.test.predict3 <- predict(pml.train.rf3,pml.test)
+pml.test.predict
+pml.test.predict3
+pml.test.predict3==pml.test.predict
+```
+With only one sensor data in the model we get OOB error of 7.25% and
+20/20 correct answers in test set.
+
+Our cross validation is done automatically via fandomForest model that uses bootstraping.
+
+Depending on needs accuracy vs. sensor data available different models could be chosen from above. For best accuracy we will chose model with most predictors.
+
+
+
